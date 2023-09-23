@@ -85,8 +85,6 @@ int main(int argc, char* argv[]) {
   int imageWidth, imageHeight = 0;
   std::string stringpath;
   for (std::string s : files) {
-    GtkWidget *button = gtk_button_new();
-
     std::string* title = new std::string;
     *title = s;
 
@@ -103,20 +101,25 @@ int main(int argc, char* argv[]) {
     GdkPixbuf *image = gdk_pixbuf_new_from_file(path, &error);
 
     if (error != NULL) {
-      GdkPixbuf *image = gdk_pixbuf_new_from_file("/home/louisj/Downloads/movies/posters/error.jpg", &error);
       std::cout << "No image found for " << s << '\n';
-    }
-    GtkWidget *imageWidget = gtk_image_new_from_pixbuf(image);
-    gtk_button_set_image(GTK_BUTTON(button), imageWidget);
+      const char *label = s.c_str();
+      GtkWidget *button = gtk_button_new_with_label(label);
 
-    imageWidth = 0; // gdk_pixbuf_get_width(image);
-    imageHeight = 0; // gdk_pixbuf_get_height(image);
-    gtk_widget_set_size_request(button, imageWidth, imageHeight);
+      g_signal_connect(button, "clicked", G_CALLBACK(buttonClicked), callbackData);
+      gtk_grid_attach(GTK_GRID(grid), button, col, row, 1, 1);
+    } else {
+      GtkWidget *button = gtk_button_new();
+      GtkWidget *imageWidget = gtk_image_new_from_pixbuf(image);
+      gtk_button_set_image(GTK_BUTTON(button), imageWidget);
 
-    g_signal_connect(button, "clicked", G_CALLBACK(buttonClicked), callbackData);
-    gtk_grid_attach(GTK_GRID(grid), button, col, row, 1, 1);
-    
-    if (col == 10) {
+      imageWidth = 0; // gdk_pixbuf_get_width(image);
+      imageHeight = 0; // gdk_pixbuf_get_height(image);
+      gtk_widget_set_size_request(button, imageWidth, imageHeight);
+
+      g_signal_connect(button, "clicked", G_CALLBACK(buttonClicked), callbackData);
+      gtk_grid_attach(GTK_GRID(grid), button, col, row, 1, 1);
+    }  
+    if (col == 7) {
         col = 0;
         row++;
     } else {
