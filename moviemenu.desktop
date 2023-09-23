@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=moviemenu
+Exec=$HOME/bin/moviemenuruntime/movie.sh
+Terminal=false
+Type=Application
+Icon=$HOME/bin/moviemenuruntime/icon.jpg
+
