@@ -4,7 +4,11 @@
 #include <string>
 #include <gtk/gtk.h>
 #include <bits/stdc++.h>
+#include <opencv2/opencv.hpp>
 
+
+const std::string MOVIE_PATH = "/home/louisj/Downloads/movies/";
+const std::string POSTER_PATH = "/home/louisj/Downloads/movies/posters/";
 
 struct CallbackData {
     GtkWidget *window;
@@ -31,6 +35,16 @@ std::vector<std::string> getFileNames(std::string path) {
 }
 
 
+void executeCommand(const std::string& command) {
+    int result = system(command.c_str());
+    if (result == 0) {
+        std::cout << "Command executed successfully." << std::endl;
+    } else {
+        std::cerr << "Command execution failed." << std::endl;
+    }
+}
+
+
 static void buttonClicked(GtkWidget* widget, gpointer data) {
   struct CallbackData *callbackData = static_cast<struct CallbackData*>(data);
   GtkWidget *window = callbackData->window;
@@ -41,25 +55,15 @@ static void buttonClicked(GtkWidget* widget, gpointer data) {
   pid_t childPid = fork();
 
   if (childPid == 0) {
-    std::string command = "vlc /home/louisj/Downloads/movies/" + movie_title;
-    const char* commandchar = command.c_str();
-    int execute = system(commandchar);
-    _exit(execute);
-  } else if (childPid > 0) {
-  } else {
-      perror("Fork failed");
+    std::string command = "vlc " + MOVIE_PATH + movie_title;
+    std::thread commandThread(executeCommand, command);
   }
 }
 
 
 int main(int argc, char* argv[]) {
   std::string chosen_movie, command;
-  std::vector<std::string> files = getFileNames("/home/louisj/Downloads/movies");
-  for (int i = 0; i < files.size(); i++) {
-    if (files[i] == "pf.sh") {
-      files.erase(files.begin() + i);  
-    }
-  }
+  std::vector<std::string> files = getFileNames(MOVIE_PATH);
 
   gtk_init(&argc, &argv);
 
@@ -82,7 +86,6 @@ int main(int argc, char* argv[]) {
 
   // Create buttons
   int row, col = 0;
-  int imageWidth, imageHeight = 0;
   std::string stringpath;
   for (std::string s : files) {
     std::string* title = new std::string;
@@ -95,7 +98,21 @@ int main(int argc, char* argv[]) {
     std::stringstream ss(s);
     getline(ss, s, '.');
 
-    stringpath = "/home/louisj/Downloads/movies/posters/" + s + ".jpg";
+    stringpath = POSTER_PATH + s + ".jpg";
+
+    // Scale all images to a uniform size
+    cv::Mat inputImage = cv::imread(stringpath);
+    if (inputImage.empty()) {
+    }
+    else if (inputImage.cols == 123) {
+    } else {
+      int targetWidth = 123;
+      double scaleFactor = static_cast<double>(targetWidth) / inputImage.cols;
+      cv::Mat scaledImage;
+      cv::resize(inputImage, scaledImage, cv::Size(targetWidth, static_cast<int>(inputImage.rows * scaleFactor)));
+      cv::imwrite(stringpath, scaledImage);
+    }
+
     const char* path = stringpath.c_str();
     GError *error = NULL;
     GdkPixbuf *image = gdk_pixbuf_new_from_file(path, &error);
@@ -112,21 +129,20 @@ int main(int argc, char* argv[]) {
       GtkWidget *imageWidget = gtk_image_new_from_pixbuf(image);
       gtk_button_set_image(GTK_BUTTON(button), imageWidget);
 
-      imageWidth = 0; // gdk_pixbuf_get_width(image);
-      imageHeight = 0; // gdk_pixbuf_get_height(image);
-      gtk_widget_set_size_request(button, imageWidth, imageHeight);
-
       g_signal_connect(button, "clicked", G_CALLBACK(buttonClicked), callbackData);
       gtk_grid_attach(GTK_GRID(grid), button, col, row, 1, 1);
     }  
-    if (col == 7) {
+    
+    delete callbackData; 
+
+    if (col == 8) {
         col = 0;
         row++;
     } else {
       col++;
     }
   }
-
+  
   gtk_widget_show_all(window);
   gtk_main();
 
