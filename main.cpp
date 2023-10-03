@@ -35,16 +35,6 @@ std::vector<std::string> getFileNames(std::string path) {
 }
 
 
-void executeCommand(const std::string& command) {
-    int result = system(command.c_str());
-    if (result == 0) {
-        std::cout << "Command executed successfully." << std::endl;
-    } else {
-        std::cerr << "Command execution failed." << std::endl;
-    }
-}
-
-
 static void buttonClicked(GtkWidget* widget, gpointer data) {
   struct CallbackData *callbackData = static_cast<struct CallbackData*>(data);
   GtkWidget *window = callbackData->window;
@@ -56,7 +46,11 @@ static void buttonClicked(GtkWidget* widget, gpointer data) {
 
   if (childPid == 0) {
     std::string command = "vlc " + MOVIE_PATH + movie_title;
-    std::thread commandThread(executeCommand, command);
+    int result = system(command.c_str());
+    if (result == 0) {
+    } else {
+        std::cerr << "Command execution failed." << '\n';
+    }
   }
 }
 
@@ -133,8 +127,6 @@ int main(int argc, char* argv[]) {
       gtk_grid_attach(GTK_GRID(grid), button, col, row, 1, 1);
     }  
     
-    delete callbackData; 
-
     if (col == 8) {
         col = 0;
         row++;
