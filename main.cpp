@@ -8,6 +8,13 @@
 #include <fstream>
 
 
+GtkWidget *window;
+GtkWidget *grid;
+std::string SHOW_PATH;
+std::string MOVIE_PATH;
+std::string POSTER_PATH;
+int COLUMN_MAX;
+
 class Movie {
   public:
     std::string path;
@@ -67,21 +74,10 @@ class Show {
 
 std::vector<std::string> getFileNames(std::string path);
 static void buttonClicked(GtkWidget* widget, gpointer data);
-static void buttonPageClicked(GtkWidget*);
+static void buttonShowClicked(GtkWidget*, gpointer);
 void scaleImage(std::string stringpath);
-void createMovieButtons(GtkWidget*, 
-                   GtkWidget*, 
-                   std::vector<std::string>, 
-                   std::string*, 
-                   const std::string, 
-                  const int);
-void createShowButtons(GtkWidget*, 
-                   GtkWidget*, 
-                   std::vector<std::string>, 
-                   std::string*,
-                   const std::string,
-                   const int);
-void deleteButtons(GtkWidget*);
+void createMovieButtons(std::vector<std::string>);
+void createShowButtons(std::vector<std::string>);
 bool isMovie(std::string);
 
 
@@ -98,16 +94,16 @@ int main(int argc, char* argv[]) {
   int index2 = config.find("posterpath=") - 1;
   int index3 = index2 + 12;
   int index4 = config.find("$END") - 1;
-  std::string *MOVIE_PATH = new std::string(config.substr(index1, index2 - index1));
-  const std::string POSTER_PATH = config.substr(index3, index4 - index3);
-  const int COLUMN_MAX = 8;
+  MOVIE_PATH = std::string(config.substr(index1, index2 - index1));
+  POSTER_PATH = config.substr(index3, index4 - index3);
+  COLUMN_MAX = 8;
 
   std::string chosen_movie, command;
-  std::vector<std::string> files = getFileNames(*MOVIE_PATH);
+  std::vector<std::string> files = getFileNames(MOVIE_PATH);
 
   gtk_init(&argc, &argv);
 
-  GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(window), "Movie Menu");
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -121,17 +117,17 @@ int main(int argc, char* argv[]) {
   GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
   gtk_container_add(GTK_CONTAINER(viewport), box);
 
-  GtkWidget *grid = gtk_grid_new();
+  grid = gtk_grid_new();
   gtk_box_pack_start(GTK_BOX(box), grid, TRUE, TRUE, 0);
 
   GtkWidget *titlelabel = gtk_label_new("Movies\n");
   gtk_container_add(GTK_CONTAINER(grid), titlelabel);
 
-  createMovieButtons(grid, window, files, MOVIE_PATH, POSTER_PATH, COLUMN_MAX); 
+  createMovieButtons(files); 
 
   GtkWidget *button = gtk_button_new_with_label("Shows");
   gtk_grid_attach(GTK_GRID(grid), button, 1, 0, 1, 1);
-  g_signal_connect(button, "clicked", G_CALLBACK(buttonPageClicked), NULL);
+  g_signal_connect(button, "clicked", G_CALLBACK(buttonShowClicked), NULL);
 
   gtk_widget_show_all(window);
   gtk_main();
@@ -162,17 +158,24 @@ std::vector<std::string> getFileNames(std::string path) {
 
 static void buttonClicked(GtkWidget* widget, gpointer data) {
   Movie *movie = static_cast<Movie*>(data);
-  GtkWidget *window = movie->window;
-  std::string movie_title = movie->title;
-  std::string MOVIE_PATH = movie->path;
-
   gtk_window_close(GTK_WINDOW(window));
   movie->play();
 }
 
 
-static void buttonPageClicked(GtkWidget* grid) {
-  deleteButtons(grid);
+static void buttonShowClicked(GtkWidget* widget, gpointer data) {
+  GList* children = gtk_container_get_children(GTK_CONTAINER(grid));
+    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
+        GtkWidget* child = GTK_WIDGET(iter->data);
+        gtk_widget_destroy(child);
+    }
+  g_list_free(children); 
+
+  std::vector<std::string> files = getFileNames(SHOW_PATH);
+  createShowButtons(files);
+
+  gtk_widget_queue_draw(window);
+  gtk_widget_queue_draw(grid);
 }
 
 
@@ -193,18 +196,12 @@ void scaleImage(std::string stringpath) {
 }
 
 
-void createMovieButtons(GtkWidget* grid, 
-                   GtkWidget* window, 
-                   std::vector<std::string> files, 
-                   std::string *MOVIE_PATH,
-                   const std::string POSTER_PATH,
-                   const int COLUMN_MAX
-                  ) {
+void createMovieButtons(std::vector<std::string> files) {
   int row = 1;
   int col = 0;
   std::string stringpath, title, pathToEps;
   for (std::string s : files) {
-    Movie* movie = new Movie(*MOVIE_PATH, s, window);
+    Movie* movie = new Movie(MOVIE_PATH, s, window);
 
     std::stringstream ss(s);
     getline(ss, s, '.');
@@ -243,16 +240,11 @@ void createMovieButtons(GtkWidget* grid,
 }
 
 
-void createShowButtons(GtkWidget* grid, 
-                   GtkWidget* window, 
-                   std::vector<std::string> files, 
-                   std::string *MOVIE_PATH,
-                   const std::string POSTER_PATH,
-                   const int COLUMN_MAX) {
+void createShowButtons(std::vector<std::string> files) {
   int row, col = 0;
   std::string stringpath, title, pathToEps;
   for (std::string s : files) {
-    Movie* movie = new Movie(*MOVIE_PATH, s, window);
+    Movie* movie = new Movie(MOVIE_PATH, s, window);
 
     std::stringstream ss(s);
     getline(ss, s, '.');
@@ -288,16 +280,6 @@ void createShowButtons(GtkWidget* grid,
       col++;
     }
   }
-}
-
-
-void deleteButtons(GtkWidget* grid) {
-  GList* children = gtk_container_get_children(GTK_CONTAINER(grid));
-    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
-        GtkWidget* child = GTK_WIDGET(iter->data);
-        gtk_widget_destroy(child);
-    }
-    g_list_free(children); 
 }
 
 
