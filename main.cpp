@@ -58,14 +58,13 @@ class Show {
       pid_t childPid = fork();
 
       if (childPid == 0) {
-        std::string command = "vlc " + this->path;
+        std::string command = "vlc " + this->path + this->title;
         int result = system(command.c_str());
         if (result == 0) {
         } else {
             std::cerr << "Command execution failed." << '\n';
         }
       }
-
     }
 };
 
@@ -77,6 +76,7 @@ static void buttonMovieClicked(GtkWidget*, gpointer);
 static void buttonShowButtonClicked(GtkWidget*, gpointer);
 void scaleImage(std::string stringpath);
 void createMovieButtons(std::vector<std::string>);
+void createEpisodeButtons(std::vector<std::string>, std::string);
 void createShowButtons();
 
 
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
   int index3 = index2 + 12;
   int index4 = config.find("showpath=") - 1;
   int index5 = index4 + 10;
-  int index6 = config.find("$END") - 1;
+  int index6 = config.find("$END") - 1;;;
   MOVIE_PATH = std::string(config.substr(index1, index2 - index1));
   POSTER_PATH = config.substr(index3, index4 - index3);
   SHOW_PATH = config.substr(index5, index6 - index5);
@@ -105,8 +105,7 @@ int main(int argc, char* argv[]) {
   int screenWidth = WidthOfScreen(screen);
   XCloseDisplay(display);
 
-  COLUMN_MAX = (screenWidth / 123.0) - 2; 
-
+  COLUMN_MAX = (screenWidth / 123.0) - 2;
   std::string chosen_movie, command;
   std::vector<std::string> files = getFileNames(MOVIE_PATH);
 
@@ -189,8 +188,7 @@ static void buttonShowButtonClicked(GtkWidget* widget, gpointer data) {
   g_signal_connect(button, "clicked", G_CALLBACK(buttonShowClicked), NULL);
 
   std::vector<std::string> files = getFileNames(show->path + show->title);
-  std::cout << show->path + show->title << '\n';
-  createMovieButtons(files); 
+  createEpisodeButtons(files, show->title + '/');
   gtk_widget_show_all(window);
   gtk_widget_show_all(grid);
 }
@@ -292,6 +290,29 @@ void createMovieButtons(std::vector<std::string> files) {
   }
 }
 
+
+void createEpisodeButtons(std::vector<std::string> files, std::string series) {
+  int row = 1;
+  int col = 0;
+
+  std::sort(files.begin(), files.end());
+
+  for (std::string s : files) {
+    Show* movie = new Show(SHOW_PATH + series, s, window);
+
+    const char *label = s.c_str();
+    GtkWidget *button = gtk_button_new_with_label(label);
+    g_signal_connect(button, "clicked", G_CALLBACK(buttonClicked), movie);
+    gtk_grid_attach(GTK_GRID(grid), button, col, row, 1, 1);    
+
+    if (col == COLUMN_MAX) {
+        col = 0;
+        row++;
+    } else {
+      col++;
+    }
+  }
+}
 
 void createShowButtons() {
   std::vector<std::string> files;
