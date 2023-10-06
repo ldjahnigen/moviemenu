@@ -9,12 +9,7 @@ This program simply calls VLC Media player and does not edit it or repackage it 
 
 INSTRUCTIONS:
 1. move mmconfig.txt to ~/.config
-2. enter the paths to your movie and poster directories
+2. enter the paths to your movie, poster and show directories
 3. move "moviemenuruntime" to ~/bin 
 4. copy "moviemenu.desktop" to ~/.local/share/applications
 5. use dmenu or your launch interface
-
-TO-DO
-- Add show support
-- Variable resolution
-- Clean everything up
